@@ -1,11 +1,8 @@
-import { Text } from '@chakra-ui/react'
-import { DarkModeSwitch } from '../components/DarkModeSwitch'
-import NavBar from '../components/NavBar'
+import { Box } from '@chakra-ui/react'
 
 const Index = () => (
-	<NavBar>
-
-	</NavBar>
+	<Box as="main" pb={8}>
+	</Box>
 )
 
 export default Index
