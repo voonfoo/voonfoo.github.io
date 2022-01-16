@@ -39,10 +39,10 @@ const NavBar = () => {
                     <Flex alignItems={'center'}>
                         <HStack mr={5} spacing={7} alignItems={'center'} display={{ base: 'none', md: 'flex' }}>
                             <LinkItem>
-                                Blog
+                                .blog
                             </LinkItem>
                             <LinkItem href="https://github.com/voonfoo/voonfoo.github.io" display="inline-flex" alignItems="center" style={{ gap: 4 }}>
-                                Source <Icon as={FaGithubAlt} />
+                                .source <Icon as={FaGithubAlt} />
                             </LinkItem>
                         </HStack>
                         <Box flex={1} spacing={7}>

@@ -1,5 +1,6 @@
 import {
     Container,
+    Box,
     Heading,
     Text,
     VStack,
@@ -7,53 +8,51 @@ import {
     Flex,
     useColorModeValue
 } from "@chakra-ui/react"
+import BlogPreview from "../components/BlogPreview"
+import { getAllPosts } from "../lib/api"
 
-const BlogItem = ({ headerText, date, summary }) => {
-    return (
-        <Container maxW='container.md'>
-            <VStack spacing={2} alignItems={'start'}>
-                <Heading as='h2'>{headerText}</Heading>
-                <Text
-                    fontSize={15}
-                    textColor={'gray.600'}>
-                    {date}
-                </Text>
-                <Text>
-                    {summary}
-                </Text>
-            </VStack>
-        </Container>
-    )
-}
-
-const Blog = () => {
+const Blog = ({ allPosts }) => {
     const color = useColorModeValue('#eaeaea', 'gray.700')
     return (
-        <Container maxW='full' minH='100vh'>
+        <Box minH='100vh'>
             <Flex h={250}
                 alignItems={'center'}
                 borderBottom={'1px'}
                 borderColor={color}
-                justifyContent={'center'}>
+                justifyContent={'center'}
+                >
                 <VStack spacing={5}>
-                    <Heading as='h1'>Blog</Heading>
+                    <Heading as='h1'>.blog</Heading>
                     <Text>Where I Talk to Myself</Text>
                 </VStack>
             </Flex>
             <VStack
-                pt='30px'
                 pb='50px'
-                divider={<StackDivider borderColor={color} />}
-                spacing={10}
-            >
-                <BlogItem
-                    headerText='Hello World'
-                    date="Wednesday, 2th January 2022 (about 2 days ago)"
-                    summary='hello' />                
-     
+                divider={<StackDivider borderColor={color} padding={0}/>}
+                align={'stretch'}
+                spacing={0}
+                >
+                    {allPosts.map((post) => (
+                        <BlogPreview title={post.title} date={post.date} excerpt={post.excerpt} slug={post.slug}/>
+                    ))}
+
+
             </VStack>
-        </Container>
+        </Box>
     )
+}
+
+export async function getStaticProps() {
+    const allPosts = getAllPosts([
+        'title',
+        'date',
+        'excerpt',
+        'slug'
+    ])
+
+    return {
+        props: { allPosts },
+    }
 }
 
 export default Blog
