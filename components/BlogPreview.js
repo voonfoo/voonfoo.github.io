@@ -9,7 +9,7 @@ import {
 
 const BlogPreview = ({ title, date, excerpt, slug }) => {
     return (
-        <Box _hover={{ boxShadow: 'base' }}>
+        <Box>
             <Container maxW='container.md' pt='50px' pb='50px'>
                 <VStack spacing={5} alignItems={'start'}>
                     <Link href={`/blog/${slug}`}>
@@ -18,7 +18,7 @@ const BlogPreview = ({ title, date, excerpt, slug }) => {
                     <Text
                         fontSize={15}
                         textColor={'gray.500'}>
-                        {date}
+                        {new Date(date).toLocaleString('en-us')}
                     </Text>
                     <Text>
                         {excerpt}

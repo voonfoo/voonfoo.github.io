@@ -15,7 +15,7 @@ const Blog = ({ allPosts }) => {
     const color = useColorModeValue('#eaeaea', 'gray.700')
     return (
         <Box minH='100vh'>
-            <Flex h={250}
+            <Flex h={200}
                 alignItems={'center'}
                 borderBottom={'1px'}
                 borderColor={color}
@@ -23,7 +23,7 @@ const Blog = ({ allPosts }) => {
                 >
                 <VStack spacing={5}>
                     <Heading as='h1'>.blog</Heading>
-                    <Text>Where I Talk to Myself</Text>
+                    <Text>happiness and sorrow</Text>
                 </VStack>
             </Flex>
             <VStack
@@ -35,8 +35,6 @@ const Blog = ({ allPosts }) => {
                     {allPosts.map((post) => (
                         <BlogPreview title={post.title} date={post.date} excerpt={post.excerpt} slug={post.slug}/>
                     ))}
-
-
             </VStack>
         </Box>
     )

@@ -35,10 +35,12 @@ const NavBar = () => {
             css={{ backdropFilter: 'blur(10px)' }}>
             <Container maxW='container.lg'>
                 <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
-                    <Avatar size="sm" name="Voon Foo" src="profile.jpg" />
+                    <LinkItem href="/">
+                        <Avatar size="sm" name="Voon Foo" src="profile.jpg" />
+                    </LinkItem>
                     <Flex alignItems={'center'}>
                         <HStack mr={5} spacing={7} alignItems={'center'} display={{ base: 'none', md: 'flex' }}>
-                            <LinkItem>
+                            <LinkItem href="/blog">
                                 .blog
                             </LinkItem>
                             <LinkItem href="https://github.com/voonfoo/voonfoo.github.io" display="inline-flex" alignItems="center" style={{ gap: 4 }}>
