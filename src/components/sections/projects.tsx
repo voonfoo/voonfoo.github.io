@@ -16,52 +16,6 @@ interface OpenSourceProject {
   role: string;
 }
 
-// Hidden for now - brewing...
-const _projects: Project[] = [
-  {
-    title: "Robot Simulator",
-    description:
-      "A physics-based simulation environment for testing robot control algorithms and motion planning strategies.",
-    tags: ["Python", "PyBullet", "ROS2"],
-    github: "https://github.com/voonfoo/robot-simulator",
-  },
-  {
-    title: "Path Planner",
-    description:
-      "Implementation of various motion planning algorithms including RRT*, A*, and potential fields for mobile robots.",
-    tags: ["C++", "ROS", "Visualization"],
-    github: "https://github.com/voonfoo/path-planner",
-  },
-  {
-    title: "SLAM Pipeline",
-    description:
-      "A modular SLAM system combining visual odometry with loop closure detection for autonomous navigation.",
-    tags: ["Python", "OpenCV", "NumPy"],
-    github: "https://github.com/voonfoo/slam-pipeline",
-  },
-];
-
-const openSourceProjects: OpenSourceProject[] = [
-  {
-    name: "ROS2",
-    description: "Robot Operating System 2 - Next generation robotics middleware",
-    url: "https://github.com/ros2/ros2",
-    role: "Contributor",
-  },
-  {
-    name: "MoveIt",
-    description: "Motion planning framework for robotic manipulation",
-    url: "https://github.com/moveit/moveit2",
-    role: "Contributor",
-  },
-  {
-    name: "Gazebo",
-    description: "Open-source 3D robotics simulator",
-    url: "https://github.com/gazebosim/gz-sim",
-    role: "Contributor",
-  },
-];
-
 function OpenSourceCard({ project }: { project: OpenSourceProject }) {
   return (
     <a
@@ -109,33 +63,7 @@ export function Projects() {
           </div>
         </div>
 
-        {/* Open Source Section */}
-        <div>
-          <h2 className="text-xl md:text-2xl font-pixel text-foreground mb-8 text-center">
-            <span className="text-primary">&gt;</span> OPEN SOURCE
-          </h2>
-
-          {/* Open source grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {openSourceProjects.map((project) => (
-              <OpenSourceCard key={project.name} project={project} />
-            ))}
-          </div>
-
-          {/* GitHub link */}
-          <div className="text-center mt-8">
-            <a
-              href="https://github.com/voonfoo"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-            >
-              <Github className="w-4 h-4" />
-              <span>View all contributions</span>
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
+        {/* Open Source Section - Hidden for now */}
       </div>
     </section>
   );
