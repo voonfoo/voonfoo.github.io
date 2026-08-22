@@ -1,28 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Background -->
-  <rect width="32" height="32" fill="#0f0f0f"/>
-
-  <!-- Face outline - pixel style -->
-  <rect x="8" y="4" width="16" height="4" fill="#f0f0f0"/>
-  <rect x="4" y="8" width="4" height="16" fill="#f0f0f0"/>
-  <rect x="24" y="8" width="4" height="16" fill="#f0f0f0"/>
-  <rect x="8" y="24" width="16" height="4" fill="#f0f0f0"/>
-
-  <!-- Corner pixels removed for rounded look -->
-  <rect x="4" y="4" width="4" height="4" fill="#0f0f0f"/>
-  <rect x="24" y="4" width="4" height="4" fill="#0f0f0f"/>
-  <rect x="4" y="24" width="4" height="4" fill="#0f0f0f"/>
-  <rect x="24" y="24" width="4" height="4" fill="#0f0f0f"/>
-
-  <!-- Eyes - the >_< style -->
-  <rect x="9" y="12" width="2" height="2" fill="#f0f0f0"/>
-  <rect x="11" y="14" width="2" height="2" fill="#f0f0f0"/>
-  <rect x="9" y="16" width="2" height="2" fill="#f0f0f0"/>
-
-  <rect x="21" y="12" width="2" height="2" fill="#f0f0f0"/>
-  <rect x="19" y="14" width="2" height="2" fill="#f0f0f0"/>
-  <rect x="21" y="16" width="2" height="2" fill="#f0f0f0"/>
-
-  <!-- Mouth - underscore -->
-  <rect x="13" y="20" width="6" height="2" fill="#f0f0f0"/>
+  <rect width="32" height="32"  fill="#211e1c"/>
+  <g stroke="#d97757" stroke-width="3.2" stroke-linecap="round">
+    <path d="M16 6v20"/>
+    <path d="M7.34 11l17.32 10"/>
+    <path d="M24.66 11L7.34 21"/>
+  </g>
 </svg>

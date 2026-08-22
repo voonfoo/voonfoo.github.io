@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
+  turbopack: {
+    root: import.meta.dirname,
+  },
 };
 
 export default nextConfig;
