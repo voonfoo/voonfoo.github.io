@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* ---------- palette: stark mono ---------- */
+/* ---------- palette: mono + ice-blue accent ---------- */
 
 :root {
   --bg: #0a0a0a;
@@ -9,8 +9,8 @@
   --line: #262626;
   --text: #ededed;
   --dim: #737373;
-  --accent: #f2f2f2;
-  --user-bar: #22c55e;
+  --accent: #7dc8ff;
+  --user-bar: #7dc8ff;
 }
 
 @theme inline {
@@ -42,6 +42,36 @@ body {
   color: var(--text);
 }
 
+/* ---------- rainbow welcome ---------- */
+
+.rainbow-text {
+  background-image: linear-gradient(
+    90deg,
+    #ff5f6d,
+    #ffa14a,
+    #f5d442,
+    #4ade80,
+    #38bdf8,
+    #818cf8,
+    #e879f9,
+    #ff5f6d
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: rainbow-slide 9s linear infinite;
+}
+
+@keyframes rainbow-slide {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 300% 50%;
+  }
+}
+
 /* ---------- motion ---------- */
 
 .msg-in {
@@ -57,7 +87,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .msg-in,
-  .animate-pulse {
+  .animate-pulse,
+  .rainbow-text {
     animation: none !important;
   }
 }

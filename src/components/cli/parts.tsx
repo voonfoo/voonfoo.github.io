@@ -149,7 +149,7 @@ export function Banner() {
     <figure className="overflow-x-auto font-mono" aria-label="welcome">
       <pre
         aria-hidden="true"
-        className="select-none whitespace-pre text-accent/90 leading-[1.15]"
+        className="rainbow-text select-none whitespace-pre leading-[1.15]"
         style={{ fontSize: "clamp(4.5px, 1.9vw, 14px)" }}
       >
         {WELCOME_ART.join("\n")}
