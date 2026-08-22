@@ -8,7 +8,14 @@ export type Msg =
   | { kind: "user"; text: string }
   | { kind: "tool"; call: string; out?: string[] }
   | { kind: "reply"; node: ReactNode }
-  | { kind: "turn"; verb: string; secs: string };
+  | { kind: "turn"; verb: string; secs: string }
+  | {
+      kind: "ask";
+      id: string;
+      question: string;
+      options: Array<{ label: string; desc?: string; value: string }>;
+    }
+  | { kind: "game"; id: string };
 
 export interface ReplyCtx {
   clear(): void;
@@ -211,6 +218,19 @@ export function buildCommands(): Command[] {
       ],
     },
     { name: "about", desc: "who is behind this terminal", run: () => [aboutReply()] },
+    {
+      name: "games",
+      desc: "pick a game to play",
+      run: () => [
+        tool("Bash(ls /usr/games)", ["snake"]),
+        {
+          kind: "ask",
+          id: `games-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
+          question: "which game?",
+          options: [{ label: "Snake", desc: "the classic. eat, grow, regret.", value: "snake" }],
+        },
+      ],
+    },
     { name: "skills", desc: "dump the skill matrix", run: () => skillsReply() },
     { name: "projects", desc: "current build queue", run: () => projectsReply() },
     { name: "contact", desc: "open a channel", run: () => contactReply() },

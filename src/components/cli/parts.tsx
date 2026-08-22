@@ -72,6 +72,67 @@ function useReducedMotion() {
   );
 }
 
+/* ============================================================
+   Ask-user-question — Claude Code / Codex style picker.
+   Purely presentational: selection state is owned by the app,
+   which swaps this in FOR the composer while it's pending.
+   ============================================================ */
+
+export interface AskOption {
+  label: string;
+  desc?: string;
+}
+
+export function AskMessage({
+  prompt,
+  options,
+  selectedIdx = 0,
+  answered,
+}: {
+  prompt: string;
+  options: AskOption[];
+  selectedIdx?: number;
+  /** chosen label, or null while pending */
+  answered?: string | null;
+}) {
+  const answeredText = answered ?? null;
+  return (
+    <div className="w-fit max-w-full border border-line bg-panel px-4 py-3 font-mono text-sm sm:text-base">
+      <p className={answeredText ? "text-dim" : "text-text"}>{prompt}</p>
+      <div className="mt-2 space-y-0.5">
+        {options.map((o, i) => {
+          const selected = i === selectedIdx && !answeredText;
+          return (
+            <div
+              key={o.label}
+              className={`flex items-baseline gap-1.5 whitespace-pre ${
+                answeredText ? "text-dim" : selected ? "text-accent" : "text-text"
+              }`}
+            >
+              <span aria-hidden="true" className="w-4 select-none">
+                {selected ? "❯" : " "}
+              </span>
+              <span className="select-none tabular-nums text-dim">{i + 1}.</span>
+              <span className={answeredText || !selected ? "" : "font-medium"}>
+                {o.label}
+                {answeredText && answeredText === o.label ? (
+                  <span className="ml-2 text-accent">✓</span>
+                ) : null}
+              </span>
+              {o.desc && <span className="text-dim">— {o.desc}</span>}
+            </div>
+          );
+        })}
+      </div>
+      {!answeredText && (
+        <p className="mt-2.5 border-t border-line pt-2 text-xs text-dim">
+          enter to select · ↑↓ navigate · numbers quick-pick
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ---------- ASCII welcome ---------- */
 
 const WELCOME_ART = [

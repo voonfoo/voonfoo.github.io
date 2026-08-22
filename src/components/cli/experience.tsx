@@ -10,6 +10,7 @@ import {
 } from "react";
 import { MatrixRain } from "./matrix-rain";
 import {
+  AskMessage,
   Banner,
   Reply,
   Spinner,
@@ -20,6 +21,7 @@ import {
   pastVerb,
   pick,
 } from "./parts";
+import { SnakeGame } from "./games/snake";
 import { buildCommands, fallbackReply, intentReply, type Msg } from "./replies";
 
 /* ============================================================
@@ -34,6 +36,7 @@ export function CliExperience() {
   const [busy, setBusy] = useState(false);
   const [thinkingVerb, setThinkingVerb] = useState("");
   const [slashIdx, setSlashIdx] = useState(0);
+  const [askIdx, setAskIdx] = useState(0);
   const [matrixActive, setMatrixActive] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const [histIdx, setHistIdx] = useState<number | null>(null);
@@ -69,6 +72,78 @@ export function CliExperience() {
   if (prevQuery !== slashQuery) {
     setPrevQuery(slashQuery);
     setSlashIdx(0);
+  }
+
+  /* ---------- pending question — owns the bottom pane ---------- */
+
+  const [answers, setAnswers] = useState<Record<string, string | null>>({});
+
+  let pendingAsk: Extract<Msg, { kind: "ask" }> | null = null;
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i];
+    if (m.kind === "ask") {
+      if (!(m.id in answers)) pendingAsk = m;
+      break;
+    }
+    if (m.kind === "turn") continue; // cosmetic markers sit on top; keep scanning
+    break; // any other newer message supersedes an older question
+  }
+  const askOptions = pendingAsk?.options ?? [];
+  const askIdxSafe = Math.min(askIdx, Math.max(0, askOptions.length - 1));
+
+  // reset selection when the pending question changes (render-phase adjustment)
+  const [prevAskId, setPrevAskId] = useState<string | null>(pendingAsk?.id ?? null);
+  if (prevAskId !== (pendingAsk?.id ?? null)) {
+    setPrevAskId(pendingAsk?.id ?? null);
+    setAskIdx(0);
+  }
+
+  useEffect(() => {
+    if (!pendingAsk) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      switch (e.key) {
+        case "ArrowDown":
+        case "j":
+          e.preventDefault();
+          setAskIdx((i) => (i + 1) % askOptions.length);
+          break;
+        case "ArrowUp":
+        case "k":
+          e.preventDefault();
+          setAskIdx((i) => (i - 1 + askOptions.length) % askOptions.length);
+          break;
+        case "Enter": {
+          e.preventDefault();
+          answerAsk(pendingAsk, askOptions[askIdxSafe]);
+          break;
+        }
+        case "Escape":
+          e.preventDefault();
+          setAnswers((prev) => ({ ...prev, [pendingAsk.id]: null }));
+          break;
+        default: {
+          const n = parseInt(e.key, 10);
+          if (n >= 1 && n <= askOptions.length) {
+            e.preventDefault();
+            answerAsk(pendingAsk, askOptions[n - 1]);
+          }
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAsk, askIdxSafe, askOptions.length]);
+
+  function answerAsk(
+    ask: Extract<Msg, { kind: "ask" }>,
+    opt: { label: string; desc?: string; value?: string }
+  ) {
+    setAnswers((prev) => ({ ...prev, [ask.id]: opt.label }));
+    const followUps: Msg[] = [{ kind: "user", text: `games ${opt.label.toLowerCase()}` }];
+    if (opt.value === "snake") followUps.push({ kind: "game", id: "snake" });
+    setMsgs((prev) => [...prev, ...followUps]);
   }
 
   /* ---------- select-to-copy (terminal-style) ---------- */
@@ -136,10 +211,21 @@ export function CliExperience() {
 
       window.setTimeout(
         () => {
+          // a turn that ends in a question hands control back instead of
+          // printing the ✻ completion marker on top of it
+          const endsWithAsk = out[out.length - 1]?.kind === "ask";
           setMsgs((prev) => [
             ...prev,
             ...out,
-            { kind: "turn", verb: pastVerb(), secs: ((Date.now() - t0) / 1000).toFixed(1) },
+            ...(endsWithAsk
+              ? []
+              : [
+                  {
+                    kind: "turn",
+                    verb: pastVerb(),
+                    secs: ((Date.now() - t0) / 1000).toFixed(1),
+                  } satisfies Msg,
+                ]),
           ]);
           setBusy(false);
         },
@@ -238,7 +324,6 @@ export function CliExperience() {
                 ["/about", "who is behind this terminal"],
                 ["/skills", "dump the skill matrix"],
                 ["/projects", "current build queue"],
-                ["/contact", "open a channel"],
               ]}
             />
           </div>
@@ -257,6 +342,19 @@ export function CliExperience() {
                     ✻ {m.verb} for {m.secs}s
                   </p>
                 );
+              case "ask":
+                return (
+                  <AskMessage
+                    key={m.id}
+                    prompt={m.question}
+                    options={m.options}
+                    selectedIdx={m.id === pendingAsk?.id ? askIdxSafe : 0}
+                    answered={answers[m.id] !== undefined ? (answers[m.id] ?? "(dismissed)") : null}
+                  />
+                );
+              case "game":
+                if (m.id === "snake") return <SnakeGame key={`game-${i}`} />;
+                return null;
             }
           })}
 
@@ -268,58 +366,79 @@ export function CliExperience() {
         </div>
       </main>
 
-      {/* composer */}
+      {/* composer — or the question, which owns the bottom pane while pending */}
       <div className="shrink-0 px-4 pb-2 sm:px-6">
         <div className="relative mx-auto max-w-3xl">
-          {/* slash popup */}
-          {popupOpen && matches.length > 0 && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden border border-line bg-panel shadow-xl shadow-black/40">
-              {matches.map((c, i) => (
-                <button
-                  key={c.name}
-                  type="button"
-                  onMouseEnter={() => setSlashIdx(i)}
-                  onClick={() => setInput(`/${c.name} `)}
-                  className={`flex w-full items-baseline gap-3 px-4 py-2 text-left font-mono text-sm ${
-                    i === safeSlashIdx ? "bg-accent/15" : ""
-                  }`}
-                >
-                  <span
-                    className={`w-24 shrink-0 ${i === safeSlashIdx ? "text-accent" : "text-text"}`}
-                  >
-                    /{c.name}
-                  </span>
-                  <span className="truncate text-dim">{c.desc}</span>
-                </button>
-              ))}
+          {pendingAsk ? (
+            <div className="border border-accent/40 bg-panel">
+              <div className="flex items-center gap-3 px-4 py-3.5">
+                <span aria-hidden="true" className="select-none font-mono text-accent">
+                  ❯
+                </span>
+                <span className="font-mono text-base text-text">
+                  {askOptions[askIdxSafe]?.label}
+                  {askOptions[askIdxSafe]?.desc && (
+                    <span className="text-dim"> — {askOptions[askIdxSafe].desc}</span>
+                  )}
+                </span>
+              </div>
+              <p className="border-t border-line px-4 py-1.5 font-mono text-[11px] text-dim">
+                enter to select · ↑↓ navigate · numbers quick-pick · esc dismiss
+              </p>
             </div>
-          )}
+          ) : (
+            <>
+              {/* slash popup */}
+              {popupOpen && matches.length > 0 && (
+                <div className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden border border-line bg-panel shadow-xl shadow-black/40">
+                  {matches.map((c, i) => (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onMouseEnter={() => setSlashIdx(i)}
+                      onClick={() => setInput(`/${c.name} `)}
+                      className={`flex w-full items-baseline gap-3 px-4 py-2 text-left font-mono text-sm ${
+                        i === safeSlashIdx ? "bg-accent/15" : ""
+                      }`}
+                    >
+                      <span
+                        className={`w-24 shrink-0 ${i === safeSlashIdx ? "text-accent" : "text-text"}`}
+                      >
+                        /{c.name}
+                      </span>
+                      <span className="truncate text-dim">{c.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              submit(input);
-            }}
-            className="border border-line bg-panel transition-colors focus-within:border-accent/50"
-          >
-            <div className="flex items-center gap-3 px-4 py-3.5">
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={onKeyDown}
-                placeholder={
-                  busy ? `${thinkingVerb.toLowerCase()}…` : "Type a message or /command…"
-                }
-                spellCheck={false}
-                autoCapitalize="off"
-                autoComplete="off"
-                autoCorrect="off"
-                aria-label="Message input"
-                className="w-full bg-transparent font-mono text-base text-text caret-accent outline-none placeholder:text-dim/60"
-              />
-            </div>
-          </form>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submit(input);
+                }}
+                className="border border-line bg-panel transition-colors focus-within:border-accent/50"
+              >
+                <div className="flex items-center gap-3 px-4 py-3.5">
+                  <input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={onKeyDown}
+                    placeholder={
+                      busy ? `${thinkingVerb.toLowerCase()}…` : "Type a message or /command…"
+                    }
+                    spellCheck={false}
+                    autoCapitalize="off"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    aria-label="Message input"
+                    className="w-full bg-transparent font-mono text-base text-text caret-accent outline-none placeholder:text-dim/60"
+                  />
+                </div>
+              </form>
+            </>
+          )}
 
           {/* footer hints + context meter */}
           <div className="flex items-center justify-between gap-4 px-1 pt-1.5 font-mono text-[11px] text-dim">
