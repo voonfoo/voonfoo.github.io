@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ABOUT, NEOFETCH_ART, OPEN_SOURCE, PROFILE, SKILLS } from "@/lib/profile-data";
+import { ContributionHeatmap } from "./commits-heatmap";
 import { A, Chip, DimP, H, Reply } from "./parts";
 
 export type Msg =
@@ -233,6 +234,21 @@ export function buildCommands(): Command[] {
     },
     { name: "skills", desc: "dump the skill matrix", run: () => skillsReply() },
     { name: "projects", desc: "current build queue", run: () => projectsReply() },
+    {
+      name: "commits",
+      desc: "github contribution heatmap",
+      run: () => [
+        tool("WebFetch(github.com/users/voonfoo/contributions)", [
+          "contribution calendar · last 12 months",
+        ]),
+        reply(
+          <Reply>
+            <H>Contributions</H>
+            <ContributionHeatmap />
+          </Reply>
+        ),
+      ],
+    },
     { name: "contact", desc: "open a channel", run: () => contactReply() },
     {
       name: "socials",

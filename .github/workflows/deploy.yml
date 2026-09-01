@@ -3,6 +3,10 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: ["main"]
+  schedule:
+    # Redeploy so the baked calendar JSON refreshes. Do not commit that JSON —
+    # extra commits would paint squares on the calendar we are mirroring.
+    - cron: "17 */6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -41,6 +45,9 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build with Next.js
+        env:
+          # GraphQL fallback only if github.com/users/voonfoo/contributions is blocked.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun run build
 
       - name: Upload artifact
