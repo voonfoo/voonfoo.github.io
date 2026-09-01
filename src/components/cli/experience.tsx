@@ -332,7 +332,7 @@ export function CliExperience({ initialCommand }: { initialCommand?: string } = 
                 ["/about", "who is behind this terminal"],
                 ["/skills", "dump the skill matrix"],
                 ["/projects", "current build queue"],
-                ["/commits", "live github heatmap"],
+                ["/commits", "github contribution heatmap"],
               ]}
             />
           </div>

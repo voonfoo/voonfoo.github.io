@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# baked at Pages deploy; never commit (cron commits would paint extra squares)
+/public/contributions.json
+
 # production
 /build
 

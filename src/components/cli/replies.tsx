@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ABOUT, NEOFETCH_ART, OPEN_SOURCE, PROFILE, SKILLS } from "@/lib/profile-data";
-import { CommitHeatmap } from "./commits-heatmap";
+import { ContributionHeatmap } from "./commits-heatmap";
 import { A, Chip, DimP, H, Reply } from "./parts";
 
 export type Msg =
@@ -236,15 +236,15 @@ export function buildCommands(): Command[] {
     { name: "projects", desc: "current build queue", run: () => projectsReply() },
     {
       name: "commits",
-      desc: "live github heatmap",
+      desc: "github contribution heatmap",
       run: () => [
-        tool("WebFetch(api.github.com/search/commits?q=author:voonfoo)", [
-          "public · last 12 months · live",
+        tool("WebFetch(github.com/users/voonfoo/contributions)", [
+          "contribution calendar · last 12 months",
         ]),
         reply(
           <Reply>
-            <H>Commits</H>
-            <CommitHeatmap />
+            <H>Contributions</H>
+            <ContributionHeatmap />
           </Reply>
         ),
       ],

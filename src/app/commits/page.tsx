@@ -3,7 +3,7 @@ import { CliExperience } from "@/components/cli/experience";
 
 export const metadata: Metadata = {
   title: "commits · voon foo",
-  description: "Live GitHub commit heatmap.",
+  description: "GitHub contribution calendar heatmap.",
 };
 
 export default function CommitsPage() {

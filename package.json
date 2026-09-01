@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "contributions": "bun scripts/fetch-contributions.ts",
+    "prebuild": "bun scripts/fetch-contributions.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

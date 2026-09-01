@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ContributionCalendar, ContributionDay } from "@/lib/contributions";
 import { PROFILE } from "@/lib/profile-data";
 import { A, DimP, Spinner } from "./parts";
 
 const USER = PROFILE.handle;
-const SEARCH_URL = "https://api.github.com/search/commits";
-const CACHE_MS = 2 * 60 * 1000;
+const CALENDAR_JSON = "/contributions.json";
 const WEEKDAYS = ["", "Mon", "", "Wed", "", "Fri", ""] as const;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const LEVEL_BG = [
@@ -17,99 +17,59 @@ const LEVEL_BG = [
   "var(--accent)",
 ] as const;
 
-type HeatDay = { date: string; count: number; future: boolean };
-
-type SearchResponse = {
-  total_count?: number;
-  items?: Array<{ commit?: { author?: { date?: string } | null } | null }>;
-  message?: string;
-};
+type HeatDay = ContributionDay & { future: boolean };
 
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ok"; counts: Map<string, number> };
-
-let cache: { at: number; counts: Map<string, number> } | null = null;
+  | { status: "ok"; calendar: ContributionCalendar };
 
 function utcDay(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function startSundayUtc(d: Date): Date {
-  const day = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  day.setUTCDate(day.getUTCDate() - day.getUTCDay());
-  return day;
+function parseISODateUTC(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
 }
 
-/** Last ~53 weeks, Sunday–Saturday columns, matching GitHub's calendar. */
-function buildWeeks(counts: Map<string, number>, now = new Date()): HeatDay[][] {
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const start = startSundayUtc(new Date(today.getTime() - 52 * 7 * 24 * 60 * 60 * 1000));
-  const end = new Date(today);
+function clampLevel(n: number): 0 | 1 | 2 | 3 | 4 {
+  const i = Math.max(0, Math.min(4, Math.round(n)));
+  return i as 0 | 1 | 2 | 3 | 4;
+}
+
+/** Sunday–Saturday columns from the baked calendar, padding the current week. */
+function buildWeeks(days: ContributionDay[]): HeatDay[][] {
+  const byDate = new Map(days.map((d) => [d.date, d]));
+  const sorted = [...byDate.keys()].sort();
+  if (!sorted.length) return [];
+
+  const first = parseISODateUTC(sorted[0]);
+  const last = parseISODateUTC(sorted[sorted.length - 1]);
+  const start = new Date(first);
+  start.setUTCDate(start.getUTCDate() - start.getUTCDay());
+  const end = new Date(last);
   end.setUTCDate(end.getUTCDate() + (6 - end.getUTCDay()));
+  const lastKey = sorted[sorted.length - 1];
 
   const weeks: HeatDay[][] = [];
   let week: HeatDay[] = [];
   for (let t = start.getTime(); t <= end.getTime(); t += 24 * 60 * 60 * 1000) {
-    const d = new Date(t);
-    const date = utcDay(d);
-    const future = d.getTime() > today.getTime();
-    week.push({ date, count: future ? 0 : (counts.get(date) ?? 0), future });
+    const date = utcDay(new Date(t));
+    const rec = byDate.get(date);
+    const future = date > lastKey;
+    week.push({
+      date,
+      count: rec?.count ?? 0,
+      level: rec?.level ?? 0,
+      future,
+    });
     if (week.length === 7) {
       weeks.push(week);
       week = [];
     }
   }
-  if (week.length) weeks.push(week);
   return weeks;
-}
-
-function level(count: number, max: number): 0 | 1 | 2 | 3 | 4 {
-  if (count <= 0) return 0;
-  const t = count / Math.max(max, 1);
-  if (t <= 0.25) return 1;
-  if (t <= 0.5) return 2;
-  if (t <= 0.75) return 3;
-  return 4;
-}
-
-async function fetchCommitCounts(): Promise<Map<string, number>> {
-  if (cache && Date.now() - cache.at < CACHE_MS) return cache.counts;
-
-  const to = new Date();
-  const from = new Date(to.getTime() - 366 * 24 * 60 * 60 * 1000);
-  const q = `author:${USER} author-date:${utcDay(from)}..${utcDay(to)}`;
-  const counts = new Map<string, number>();
-  let page = 1;
-  let got = 0;
-  let total = Infinity;
-
-  while (page <= 10 && got < total) {
-    const url = `${SEARCH_URL}?q=${encodeURIComponent(q)}&per_page=100&page=${page}&sort=author-date&order=desc`;
-    const res = await fetch(url, {
-      cache: "no-store",
-      headers: { Accept: "application/vnd.github+json" },
-    });
-    const data = (await res.json()) as SearchResponse;
-    if (!res.ok) {
-      throw new Error(data.message ?? `GitHub search failed (${res.status})`);
-    }
-    total = data.total_count ?? 0;
-    const items = data.items ?? [];
-    for (const item of items) {
-      const iso = item.commit?.author?.date;
-      if (!iso) continue;
-      const key = utcDay(new Date(iso));
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-      got++;
-    }
-    if (items.length < 100) break;
-    page++;
-  }
-
-  cache = { at: Date.now(), counts };
-  return counts;
 }
 
 function monthLabel(week: HeatDay[], isFirst: boolean): string | null {
@@ -130,53 +90,61 @@ function formatDay(date: string): string {
   });
 }
 
-export function CommitHeatmap() {
+function contribWord(n: number): string {
+  return n === 1 ? "contribution" : "contributions";
+}
+
+export function ContributionHeatmap() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
   useEffect(() => {
-    let cancelled = false;
-    fetchCommitCounts()
-      .then((counts) => {
-        if (!cancelled) setState({ status: "ok", counts });
+    const ac = new AbortController();
+    fetch(CALENDAR_JSON, { signal: ac.signal })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(
+            res.status === 404
+              ? "calendar not baked yet"
+              : `failed to load calendar (${res.status})`
+          );
+        }
+        const data = (await res.json()) as ContributionCalendar;
+        if (!Array.isArray(data.days) || data.days.length === 0) {
+          throw new Error("calendar JSON has no days");
+        }
+        setState({ status: "ok", calendar: data });
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
-          setState({
-            status: "error",
-            message: err instanceof Error ? err.message : "failed to fetch commits",
-          });
-        }
+        if (ac.signal.aborted) return;
+        setState({
+          status: "error",
+          message: err instanceof Error ? err.message : "failed to load calendar",
+        });
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => ac.abort();
   }, []);
 
   if (state.status === "loading") {
-    return <Spinner label="Fetching commits" />;
+    return <Spinner label="Fetching contributions" />;
   }
 
   if (state.status === "error") {
-    return <DimP>github search failed: {state.message} — try /commits again in a minute.</DimP>;
+    return <DimP>contribution calendar unavailable: {state.message}</DimP>;
   }
 
-  const weeks = buildWeeks(state.counts);
-  let total = 0;
-  let max = 0;
-  for (const n of state.counts.values()) {
-    total += n;
-    if (n > max) max = n;
-  }
+  const { calendar } = state;
+  const weeks = buildWeeks(calendar.days);
+  const total = calendar.total;
 
   return (
     <div className="space-y-3">
       <p>
-        {total} public commit{total === 1 ? "" : "s"} in the last year
+        {total.toLocaleString("en-US")} {contribWord(total)} in the last year
       </p>
       <div className="overflow-x-auto overflow-y-hidden">
         <div
           role="img"
-          aria-label={`${total} public commits by ${USER} in the last year`}
+          aria-label={`${total.toLocaleString("en-US")} ${contribWord(total)} by ${USER} in the last year`}
           className="inline-flex gap-1.5"
         >
           <div className="flex shrink-0 flex-col gap-[2px] pt-4">
@@ -201,10 +169,10 @@ export function CommitHeatmap() {
               {weeks.map((week) => (
                 <div key={week[0].date} className="flex flex-col gap-[2px]">
                   {week.map((day) => {
-                    const lv = level(day.count, max);
+                    const lv = clampLevel(day.level);
                     const label = day.future
                       ? undefined
-                      : `${day.count} commit${day.count === 1 ? "" : "s"} on ${formatDay(day.date)}`;
+                      : `${day.count} ${contribWord(day.count)} on ${formatDay(day.date)}`;
                     return (
                       <div
                         key={day.date}
@@ -235,7 +203,7 @@ export function CommitHeatmap() {
         <span className="text-dim/70">·</span>
         <A href={PROFILE.github}>github.com/{USER}</A>
       </div>
-      <DimP>live from api.github.com · public commits only</DimP>
+      <DimP>github contribution calendar · private activity included as day counts</DimP>
     </div>
   );
 }
