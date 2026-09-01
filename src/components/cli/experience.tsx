@@ -30,7 +30,7 @@ import { buildCommands, fallbackReply, intentReply, type Msg } from "./replies";
 
 /* ---------- component ---------- */
 
-export function CliExperience() {
+export function CliExperience({ initialCommand }: { initialCommand?: string } = {}) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -41,6 +41,7 @@ export function CliExperience() {
   const [history, setHistory] = useState<string[]>([]);
   const [histIdx, setHistIdx] = useState<number | null>(null);
   const draftRef = useRef("");
+  const bootedInitial = useRef(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -235,6 +236,13 @@ export function CliExperience() {
     [busy, commands]
   );
 
+  /* deep-link: /commits auto-runs the same command as typing it */
+  useEffect(() => {
+    if (!initialCommand || bootedInitial.current) return;
+    bootedInitial.current = true;
+    submit(initialCommand);
+  }, [initialCommand, submit]);
+
   /* ---------- composer keys ---------- */
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
@@ -324,6 +332,7 @@ export function CliExperience() {
                 ["/about", "who is behind this terminal"],
                 ["/skills", "dump the skill matrix"],
                 ["/projects", "current build queue"],
+                ["/commits", "live github heatmap"],
               ]}
             />
           </div>
